@@ -1,0 +1,18 @@
+{
+  "name": "codeledger",
+  "version": "0.5.0",
+  "private": true,
+  "description": "Watches LeetCode and auto-commits Accepted solutions to a GitHub repo you own.",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:production": "node scripts/build.mjs --production",
+    "icons": "node tools/logo-icons.mjs",
+    "typecheck": "tsc --noEmit",
+    "store-assets": "node tools/store-assets.mjs"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.270",
+    "esbuild": "^0.23.1",
+    "typescript": "^5.5.4"
+  }
+}

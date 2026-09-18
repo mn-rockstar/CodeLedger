@@ -1,0 +1,631 @@
+PRODUCT REQUIREMENTS DOCUMENT
+LeetCode + GeeksforGeeks -> GitHub Auto-Sync Extension
+
+Working title: CodeLedger (placeholder - just a string in manifest.json,
+rename anytime)
+Author: you
+Status: Phases 0-2 complete and verified end to end on the live site
+(2026-08-14) - solving a problem on LeetCode auto-commits it to
+GitHub. Kept current as code changes.
+
+IMPLEMENTATION STATUS (updated as code changes)
+- Built and confirmed working live (verified 2026-08-14): FR1 (GitHub
+  connect - see auth deviation below), FR2 (create/link repo), FR3
+  (LeetCode submission detection + GraphQL fetch - see detection
+  deviation below), FR4 (commit to GitHub with 409 retry). A real
+  solve produced the expected {questionId}-{titleSlug}/ folder
+  containing README.md + the solution file.
+- Built, not yet confirmed working live: FR6 (stats) - popup counter +
+  stats.json mirrored to the repo root, with the merge-don't-sum
+  behavior the FR calls for. DEVIATION from section 9's schema: the
+  spec's stats.shas map (a cache of file SHAs, doubling as the
+  per-problem record) was dropped in favour of an explicit
+  stats.problems map of { [folder]: { difficulty } }, and the four
+  counts are always RECOMPUTED from that map rather than incremented.
+  The SHA cache was only ever an optimization to skip a GET before
+  each PUT - FR4 already reads the SHA live, which is simpler and
+  can't go stale - and deriving the counts instead of incrementing
+  makes double-counting structurally impossible rather than something
+  the merge logic has to correct for.
+- Phase 6 (ship) in progress: icons generated
+  (tools/make-icons.mjs draws them from scratch - no image library), a
+  production build mode added (npm run build:production - minified, no
+  source maps), host_permissions narrowed to only what's actually
+  fetched (dropped an unused github.com entry and a *.deno.dev
+  wildcard), plus a privacy policy (PRIVACY.md) and a Chrome Web Store
+  submission walkthrough (PUBLISHING.md). BLOCKING ISSUE documented
+  there: the store assigns a new permanent extension ID, which
+  invalidates both the GitHub OAuth App callback URL and the Deno
+  worker's CORS check - those must be updated between uploading a
+  draft and publishing. Answers section 13's open questions: name
+  stays "CodeLedger", and the decision is to publish publicly.
+- Section 14 discharged (2026-09-06): the project ships under MIT,
+  (c) 2026 Mohit Narvariya (LICENSE at the repo root), and the ref/
+  checkout of the LeetHub extension has been deleted - it was
+  reference material only and was never part of the build. What was
+  taken from reading it during the FR3 detection work were facts about
+  third parties (the data-e2e-locator="submission-result" element
+  LeetCode renders; language-to-extension mappings), not expression.
+  Section 14's goal - 100% original code, free to license and publish
+  under the author's own name - holds.
+- Known limitation (FR6): stats.json is keyed by problem folder only,
+  so it has no record of WHICH LeetCode account solved what. Two
+  LeetCode accounts committing to the same repo produce one combined
+  count with no way to separate them. Cross-DEVICE sync does work (the
+  popup reconciles against the repo in the background on open), and
+  switching GITHUB accounts clears local stats so counts can't leak
+  between repos.
+- Beyond FR2 (v0.9): the spec's link-repo step took a bare
+  "owner/repo" string. In practice that was the single most confusing
+  point of the whole setup - the first instinct is to type just the
+  repo name, or paste the URL from the address bar, and both were
+  rejected. parseRepoInput now accepts the browser URL, a .git clone
+  URL, an SSH remote, owner/repo, or a bare repo name resolved against
+  the signed-in account, and echoes the resolved owner/repo back in
+  any error so a wrongly-inferred owner is visible. Non-GitHub hosts
+  still fail closed.
+- Branding + onboarding (v0.7-0.8): the user supplied logo artwork
+  (assets/logo.png, a wide lockup) which now drives the extension
+  icons - tools/logo-icons.mjs hand-rolls PNG decode/crop/resample (no
+  image library in the project) to letterbox the square terminal mark
+  onto a rounded tile, and falls back to a tighter ">_"-only crop at
+  16px where the window chrome would otherwise collapse into mush.
+  Design tokens moved to a shared theme.css. A first-run welcome.html
+  (pin the icon -> connect GitHub -> solve something) opens via a new
+  minimal service worker on onInstalled - unrelated to the removed
+  detection worker. The artwork also settles the tagline: "Code it.
+  Commit it. Track it." Note the logo's green fails WCAG as text on
+  the light theme (measured 2.08:1 against 4.5:1 required), so light
+  mode uses a darkened step of the same hue and dark mode keeps the
+  authentic colour.
+- Schema addition (v0.6): each record in stats.problems now also
+  carries an optional solvedAt, lang and title, which power four KPI
+  tiles in the popup (day streak, solves in the last 7 days, top
+  language, last solved). All three are optional and the derived
+  metrics skip records lacking them, so older stats.json files stay
+  valid - but the metrics only begin accumulating from the first solve
+  after upgrading.
+- Beyond FR10's spec: the connected popup is a small dashboard rather
+  than a text readout - an identity block (GitHub account, LeetCode
+  account, linked repo) above a donut chart of solved problems with
+  the total as a centred hero figure, plus a legend giving each
+  difficulty's count and share. Difficulty is encoded as a
+  single-hue ORDINAL ramp (light Easy -> dark Hard) rather than three
+  unrelated hues, because Easy/Medium/Hard is an ordered scale and the
+  ordering should read in the color; the ramp steps are validated for
+  lightness monotonicity, step separation, and surface contrast in
+  both light and dark themes.
+- Not yet built: FR5 (topic-grouped root README), FR7 (notes), FR8
+  (manual sync button), FR9 (GeeksforGeeks). Firefox manifest also not
+  started.
+- Deviation from section 8's auth design: FR1 originally specified a
+  pasted fine-grained Personal Access Token specifically to avoid
+  needing a backend. That was built first, then fully replaced at the
+  user's request with real GitHub OAuth (a "Login with GitHub" button
+  via chrome.identity.launchWebAuthFlow), backed by a small Deno Deploy
+  function that holds the OAuth Client Secret and does the
+  code-for-token exchange - i.e. the v2 enhancement section 8 described
+  as optional is now what's actually shipped. Trade-off accepted: OAuth
+  Apps only grant broad "repo" scope (all repos), unlike the
+  fine-grained single-repo PAT.
+- Deviation from FR3's detection design: the original spec (and the
+  background service worker + chrome.webNavigation it called for)
+  assumed LeetCode navigates to a /submissions/<id>/ URL after a
+  submit - confirmed via live testing that the current LeetCode site
+  no longer does this at all (results now render inline on the same
+  page). Detection was rebuilt twice: first around intercepting the
+  page's own "submit/" network call (patching window.fetch), then -
+  after cross-checking against the original open-source LeetHub
+  extension's source for understanding (not copied; see section 14) -
+  around watching for the [data-e2e-locator="submission-result"]
+  element LeetCode itself renders when judging finishes, then
+  querying LeetCode's "most recent submission for this problem" for
+  an id. The background service worker (src/background.ts) was
+  removed entirely - no longer needed. After this, the user asked for
+  a full rewrite of the whole codebase (keeping the GitHub OAuth
+  Client ID and Deno Deploy backend unchanged, since neither was ever
+  broken) to eliminate any leftover code from the two abandoned
+  detection approaches - the DOM+GraphQL approach described above is
+  what the rewrite kept and cleaned up, not a fourth new approach.
+- Feature beyond the original FRs: a LeetCode account confirmation
+  system - confirms which LeetCode account is "yours" (explicit click,
+  even on the first solve) and shows an in-page Continue/Skip banner if
+  a future commit's detected LeetCode account differs from the
+  confirmed one. Not in the original spec; added because multiple
+  people/accounts could otherwise have their solves silently committed
+  to the same repo.
+- Full current file-by-file breakdown: see README.md in this folder.
+
+HOW TO USE THIS DOCUMENT
+This file is written to be self-contained: everything you need to build
+the extension - API shapes, algorithms, data formats - is described
+here in plain language, not "go read file X and copy it." You should be
+able to build the whole codebase from this document alone, without
+opening LeetHub-2.0-main at all. That's intentional: it keeps your
+project a clean, independent implementation of the same IDEA (watch a
+judge site, commit accepted solutions to GitHub), not a derivative of
+anyone else's CODE. See section 14 for why that distinction matters and
+how to keep it that way while you build.
+
+
+================================================================
+1. SUMMARY
+================================================================
+A Chrome + Firefox extension that watches LeetCode and GeeksforGeeks
+while you solve problems, and - the moment a submission is Accepted -
+automatically commits your solution and the problem statement to a
+GitHub repository you own. No copy-pasting, no manual "git add".
+
+Everything about it - name, branding, code, GitHub app, published
+listing - is entirely yours, written from scratch by you from the
+specification below.
+
+
+================================================================
+2. GOALS
+================================================================
+G1. On every Accepted submission (LeetCode or GFG), auto-commit the
+    code + problem statement - zero manual steps.
+G2. Keep the target repo self-organizing: one folder per problem, a
+    root README.md grouped by topic (Array, Dynamic Programming, ...).
+G3. Track running stats (solved / easy / medium / hard) visible in
+    the toolbar popup.
+G4. Ship under your own name with no secrets baked into the
+    extension (see section 8), and a codebase that is entirely your
+    own original work (see section 14).
+G5. Double as a learning project - come out understanding WHY each
+    piece works, not just have working code.
+
+
+================================================================
+3. NON-GOALS FOR V1
+================================================================
+- Other judges (Codeforces, HackerRank, etc.) - LeetCode + GFG only.
+- A hosted backend server - the recommended auth approach needs none.
+- Support for old/legacy site UIs - build against whatever the
+  current live LeetCode and GFG pages look like when you build this;
+  don't chase backward compatibility with UIs that no longer exist.
+- Multi-user / SaaS - single-user personal tool, optionally
+  publishable so other people can install it and connect their own
+  GitHub account, but no shared server or database.
+
+
+================================================================
+4. USERS
+================================================================
+Just you, day one. Optionally: anyone who installs it from the
+Chrome Web Store / Firefox Add-ons later and connects their own
+GitHub account - the extension never sees or stores anyone's data
+but the local user's.
+
+
+================================================================
+5. CORE USER JOURNEY
+================================================================
+1. Install the extension -> click its toolbar icon -> "Connect
+   GitHub" (paste a personal access token, section 8).
+2. Choose "Create a new private repo" or "Link an existing repo".
+3. Go solve a problem on LeetCode or GFG as normal -> Submit ->
+   Accepted.
+4. The extension shows a small spinner near the Submit button, then
+   a checkmark - it just committed in the background.
+5. Open your GitHub repo: 0001-two-sum/README.md,
+   0001-two-sum/two-sum.py exist, and the root README.md now lists
+   Two Sum under an "Array" and "Hash Table" table.
+6. Click the toolbar icon anytime -> see "Solved: 42 (20 easy /
+   18 medium / 4 hard)".
+
+
+================================================================
+6. FUNCTIONAL REQUIREMENTS
+================================================================
+Each requirement below is written with enough detail (API calls,
+algorithms, data shapes) to implement directly. Where you need a
+detail this document doesn't cover (an exact CSS selector, a field
+name), get it yourself from the live site's dev tools - Network tab
+for API shapes, Elements tab for DOM structure. That's normal,
+independent engineering, not "referencing someone else's code."
+
+FR1 - Connect GitHub (token-based, not OAuth)
+  Popup shows a "Connect GitHub" input when no token is stored.
+  On submit:
+    GET https://api.github.com/user
+    Header: Authorization: Bearer <the pasted token>
+    Header: Accept: application/vnd.github+json
+  - 200 response -> parse the "login" field as the username, store
+    { token, username } in chrome.storage.local.
+  - 401 response -> show "That token isn't valid" and don't store it.
+  Also handle re-checking on popup open: if a token is already
+  stored, re-run this same GET to confirm it still works (tokens can
+  be revoked or expire) before showing the "connected" UI.
+
+FR2 - Repo setup
+  Two paths, both authenticated with the stored token the same way
+  as FR1:
+  CREATE a new repo:
+    POST https://api.github.com/user/repos
+    Body (JSON): { "name": <user input>, "private": true,
+                   "auto_init": true,
+                   "description": <your own description string> }
+    On 201 -> read "full_name" from the response, store it as the
+    linked repo ("owner/repo").
+    On 422 -> repo name already exists; show that error and suggest
+    linking instead.
+  LINK an existing repo:
+    GET https://api.github.com/repos/{owner}/{repo}
+    On 200 -> you have access; store "owner/repo" as linked.
+    On 404 -> repo doesn't exist or token can't see it.
+    On 403 -> token doesn't have write access to it.
+
+FR3 - Detect a LeetCode submission and fetch its details
+  Detecting the click:
+  - LeetCode is a single-page app, so the Submit button appears and
+    disappears as you navigate without a full page reload. Use a
+    MutationObserver on document.body to notice when the button
+    exists, then attach a click listener to it (and separately listen
+    for the Ctrl/Cmd+Enter keyboard shortcut on the code editor,
+    which also submits).
+  Getting the submission ID:
+  - After a successful submit, LeetCode's URL changes to include
+    /submissions/<id>/, but because it's a SPA this is a
+    History-API navigation, not a real page load, so a normal
+    "page loaded" listener won't fire. In the background service
+    worker, use chrome.webNavigation.onHistoryStateUpdated (filtered
+    to leetcode.com and a URL containing "submissions") to catch
+    this change and extract the numeric id with a regex like
+    /\/submissions\/(\d+)\//. Send it to the content script via
+    chrome.runtime.sendMessage / onMessage.
+  Fetching the details:
+  - Once you have the submission id, POST to
+    https://leetcode.com/graphql/ (this is LeetCode's own public
+    API for the site you're logged into - the request just needs to
+    run from a content script on leetcode.com so your existing
+    session cookie is sent automatically).
+  - You'll need a GraphQL query asking for, at minimum: runtime,
+    runtimeDisplay, runtimePercentile, memory, memoryDisplay,
+    memoryPercentile, and code for the submission, plus (nested)
+    the related question's questionId, title, titleSlug, content
+    (the HTML problem statement), difficulty, and topicTags. Open
+    LeetCode's own submission result page in your browser with dev
+    tools' Network tab open to see the exact query LeetCode's own
+    frontend sends - that's the officially-shaped request for their
+    public API, independent of any third-party extension.
+
+FR4 - Commit to GitHub (the core of the project)
+  File layout per problem:
+    {questionId zero-padded to 4 digits}-{titleSlug}/README.md
+    {questionId zero-padded to 4 digits}-{titleSlug}/{titleSlug}.{ext}
+  Committing a file (create or update) uses GitHub's Contents API:
+    PUT https://api.github.com/repos/{owner}/{repo}/contents/{path}
+    Header: Authorization: Bearer <token>
+    Body (JSON): {
+      "message": <commit message string>,
+      "content": <file content, base64-encoded>,
+      "sha": <required ONLY when overwriting a file that already
+              exists - the current blob's sha, obtained either from
+              your own locally-tracked stats/shas map, or from a
+              GET to the same URL first>
+    }
+  Base64-encoding text with non-ASCII characters safely: the
+  built-in btoa() only handles Latin1, so encode with
+    btoa(unescape(encodeURIComponent(text)))
+  and reverse it with
+    decodeURIComponent(escape(atob(base64String)))
+  (this is a generic, widely-documented JavaScript technique for
+  UTF-8-safe base64, not specific to any project - useful any time
+  you need to base64-encode a JS string that might contain non-ASCII
+  characters, e.g. accented letters in a problem statement.)
+  Handling conflicts:
+  - If GitHub responds 409, the "sha" you sent is stale (something
+    changed the file since you last read it). Recover by doing a
+    fresh GET on the same contents URL to read the current sha, then
+    retry the PUT with that sha.
+  Language -> file extension:
+  - Build your own small lookup table keyed by whatever string
+    LeetCode's API returns for the submission's language (e.g.
+    "Python3", "C++", "JavaScript"), mapping to a file extension
+    (.py, .cpp, .js, ...). You'll discover the exact strings LeetCode
+    uses by inspecting a real submissionDetails response (see FR3).
+  Commit message: include the run's time/memory stats so your git
+  history doubles as a performance log, e.g.
+    "Time: {runtimeDisplay} ({runtimePercentile}%), Memory:
+    {memoryDisplay} ({memoryPercentile}%)"
+
+FR5 - Self-organizing root README
+  Format: the root README.md contains one block delimited by two
+  HTML comments, e.g.:
+    <!--TOPICS:START-->
+    ## Array
+    | Problem |
+    |---|
+    | [0001-two-sum](...) |
+    <!--TOPICS:END-->
+  One "## TopicName" heading + a one-column markdown table per topic
+  tag, each row a link to that problem's folder in the repo.
+  Algorithm, each time a problem is solved:
+    1. GET the current root README.md (FR4's contents endpoint, no
+       path suffix).
+    2. Decode it, locate the TOPICS block (or create an empty one if
+       this is the very first solve).
+    3. For each topic tag on the problem: find (or create) that
+       topic's "## Heading" + table inside the block; check whether
+       a row linking to this problem already exists (avoid duplicate
+       rows on resubmission); if not, append a new row.
+    4. Re-sort each topic's rows numerically by problem number so
+       the table stays ordered as you add to it out of sequence.
+    5. Re-encode and PUT the file back via FR4, handling 409 the same
+       way.
+  This is a description of the desired file format and behavior -
+  implement the string handling however makes sense to you (a
+  markdown-table library, manual string splitting, or a small
+  parser - your choice).
+
+FR6 - Stats
+  Schema: see section 9 (Data Model).
+  Local: on each first-time solve of a given problem, increment
+  solved / easy / medium / hard in chrome.storage.local.
+  Remote mirror: also write a stats.json to the repo root via FR4
+  so stats survive a reinstall or a second device. On a 409 here,
+  don't just overwrite - GET the existing stats.json, merge counts
+  (recompute solved/easy/medium/hard from the union of both sides'
+  per-problem records, not by summing, so a problem counted on two
+  devices isn't double-counted), then PUT the merged result.
+
+FR7 - Notes (nice-to-have, build fresh)
+  If LeetCode's notes panel has content for the current problem,
+  commit it as NOTES.md alongside the solution via FR4. You'll need
+  to find where LeetCode currently exposes note content (DOM or
+  GraphQL) yourself, since UI details like this drift over time -
+  treat it as a small optional add-on, not a blocker for the rest of
+  the project.
+
+FR8 - Manual sync fallback
+  Inject a small "Sync now" button onto the submission-result page
+  (after a successful submission) that, on click, re-runs the same
+  FR3 (using the submission id already visible in the current URL)
+  + FR4 pipeline manually - useful if automatic detection ever
+  misses one.
+
+FR9 - GeeksforGeeks support
+  GFG has no public GraphQL API like LeetCode's, so this is DOM
+  scraping end-to-end:
+    1. Watch for the page's own "solved successfully" confirmation
+       text/toast after clicking Submit.
+    2. Read the problem title and difficulty from their labeled
+       header elements.
+    3. Read the problem statement from the description container's
+       HTML.
+    4. Read the submitted code from whatever code editor GFG is
+       currently using (inspect the live page - many browser code
+       editors expose a JS API to read the current value, e.g. an
+       Ace or Monaco/CodeMirror instance attached to the page).
+    5. Commit via the same FR4 logic (folder name = kebab-cased
+       title, same README + solution-file shape).
+  DOM structure on any live site changes over time - build this by
+  inspecting the current GFG page yourself rather than assuming
+  fixed selectors, and expect to revisit it occasionally.
+
+FR10 - Popup UI states
+  Three states, driven by what's in chrome.storage.local:
+  - No token stored -> show the Connect GitHub input (FR1).
+  - Token stored, no linked repo -> show repo setup (FR2).
+  - Token + repo both present -> show live stats (FR6), a "reset
+    stats" control, and a link to the repo.
+
+
+================================================================
+7. NON-FUNCTIONAL REQUIREMENTS
+================================================================
+- Security: no secret embedded in the shipped extension (section 8).
+  Token lives only in chrome.storage.local, never transmitted
+  anywhere but api.github.com.
+- Manifest V3 for Chrome. Firefox's manifest differs mainly in how
+  the background worker is declared (Chrome: a single
+  "service_worker" file; Firefox: a "scripts" array) - you'll write
+  both manifests yourself once you know your file layout.
+- Resilience: GitHub API 409s must retry-and-merge, not fail
+  silently.
+- Cost: the token-based approach (FR1) needs no backend, so this
+  runs free forever, for as many users as install it.
+
+
+================================================================
+8. SECURITY & GITHUB AUTH (the decision you asked me to make)
+================================================================
+The common mistake to avoid: a full GitHub OAuth App flow ("Click to
+Authorize with GitHub") requires a CLIENT_SECRET, and a browser
+extension is just an unpacked folder of static files - anyone can
+read a secret straight out of it. OAuth App secrets are meant to
+live on a server you control, never in code shipped to users'
+machines.
+
+Build this instead - a fine-grained Personal Access Token (PAT):
+  1. You (or, later, anyone installing your extension) go to
+     github.com/settings/personal-access-tokens/new.
+  2. Create a FINE-GRAINED token scoped to just the one repo you're
+     linking, with "Contents: Read and write" permission - nothing
+     else.
+  3. Paste that token into the extension's popup once (FR1).
+  4. It's stored in chrome.storage.local (this device's browser
+     profile only - deliberately NOT chrome.storage.sync, which
+     would replicate it to Google's servers across your signed-in
+     devices).
+  5. Every commit call sends that token straight from your browser
+     to api.github.com over HTTPS. No third party ever sees it -
+     there's no server in the middle at all.
+
+Why this wins: no CLIENT_SECRET exists anywhere in this design, so
+there's nothing to leak. It also means zero backend to build, host,
+or pay for - the whole extension stays static files, forever.
+
+The trade-off: pasting a token is one step less slick than clicking
+"Authorize with GitHub." If you want that polished button later, it
+needs a small backend (e.g. a free Cloudflare Worker) to hold a
+client secret server-side and do the code-for-token exchange - treat
+that as an optional v2 enhancement, not a v1 requirement.
+
+
+================================================================
+9. DATA MODEL
+================================================================
+Everything lives in chrome.storage.local (nothing server-side):
+
+  gh_token      (string)  The user's GitHub PAT
+  gh_username   (string)  Fetched from GET /user once, shown in
+                          the popup
+  linked_repo   (string)  "owner/repo" of the connected repo
+  sync_ready    (boolean) Whether section 6's FR1+FR2 setup is
+                          complete
+  stats         (object)  { solved, easy, medium, hard,
+                          shas: { [problemSlug]: { [filename]: sha }
+                          } } - the shas map is what lets FR4 tell
+                          "create" from "update" and avoid duplicate
+                          files, and lets FR6 merge without
+                          double-counting
+
+
+================================================================
+10. TECHNICAL ARCHITECTURE
+================================================================
+- Manifest V3. One background service worker (needed for FR3's
+  webNavigation listener); content scripts on leetcode.com and
+  practice.geeksforgeeks.org only - no content script on github.com
+  is needed at all with the token-based auth in section 8.
+- Build tooling: a bundler (webpack, esbuild, or vite all work fine)
+  that compiles your content script(s), popup script, and setup-page
+  script into a dist/ folder, alongside a manifest.json and any
+  icons - then point Chrome's "Load unpacked" / Firefox's "Load
+  Temporary Add-on" at that folder. This is a completely standard
+  browser-extension build setup you can research fresh (the MDN and
+  Chrome extension docs are the canonical source, not any specific
+  project's webpack config).
+- APIs used: LeetCode's GraphQL endpoint at
+  https://leetcode.com/graphql/ (read-only, rides your logged-in
+  cookie automatically since it's called from a content script on
+  that origin), and GitHub's REST API (Contents API for commits,
+  /user and /repos for setup).
+
+Suggested repo layout (organize this however makes sense to you -
+this is just a sane starting point):
+
+  manifest-chrome.json
+  manifest-firefox.json
+  build config (webpack/esbuild/vite, your choice)
+  popup.html / src/popup.js
+  setup.html / src/setup.js
+  src/background.js
+  src/leetcode/detect.js       (FR3)
+  src/leetcode/github.js       (FR4 - the commit/retry logic)
+  src/leetcode/readme.js       (FR5)
+  src/stats.js                 (FR6)
+  src/gfg.js                   (FR9)
+
+
+================================================================
+11. ROADMAP - BUILD IN THIS ORDER
+================================================================
+Each phase should be load-unpacked-and-actually-works before
+starting the next.
+
+Phase 0 - Scaffolding [STATUS: DONE]
+  Goal:  Bare manifest.json (MV3), empty popup, a content script
+         that just console.logs on leetcode.com
+  Done when: You load it unpacked in chrome://extensions and see
+         the log
+
+Phase 1 - GitHub connection [STATUS: DONE - via OAuth, not a pasted
+         PAT; see IMPLEMENTATION STATUS above]
+  Goal:  FR1 + FR2
+  Done when: You can connect GitHub and create/link a repo from the
+         popup
+
+Phase 2 - LeetCode capture + commit [STATUS: DONE, confirmed on a
+         real submission]
+  Goal:  FR3 + FR4
+  Done when: Solving a problem creates the two files in your repo -
+         the heart of the project
+
+Phase 3 - Organization + stats [STATUS: NOT STARTED]
+  Goal:  FR5 + FR6
+  Done when: Root README groups by topic; popup shows live counts
+
+Phase 4 - GFG support [STATUS: NOT STARTED]
+  Goal:  FR9
+  Done when: Same behavior on GFG, reusing the FR4 upload code
+
+Phase 5 - Polish [STATUS: NOT STARTED]
+  Goal:  FR7, FR8, FR10, icons/branding, Firefox manifest
+  Done when: Feels like a finished product on both browsers
+
+Phase 6 - Ship [STATUS: NOT STARTED]
+  Done when: Tested on Chrome + Firefox; decide publish vs.
+         keep-personal (section 13)
+
+
+================================================================
+12. IF YOU GET STUCK
+================================================================
+This document is meant to be enough on its own. If you genuinely get
+stuck on a specific piece of logic and want to see one way it's been
+solved before, there are open-source LeetCode-to-GitHub sync
+extensions you can search for and read for understanding (e.g.
+searching GitHub for "leetcode github sync extension"). If you do
+that: read to understand the APPROACH, then close the file and write
+your own version in your own words/code. Don't copy-paste blocks of
+someone else's source into your project - that's the one thing that
+would actually create a licensing entanglement (see section 14).
+Everything in section 6 above was written to make that detour
+unnecessary.
+
+
+================================================================
+13. OPEN QUESTIONS FOR YOU
+================================================================
+Answer these whenever they come up - none block starting Phase 0:
+
+1. Final name - no rush, doesn't affect any code until Phase 5
+   packaging.
+2. Publish it, or keep it personal? Publishing (Chrome Web Store is
+   a one-time $5 fee; Firefox Add-ons is free) needs a privacy
+   policy, icons, and screenshots - none of that blocks you from
+   just using it yourself first.
+3. Which repo will actually receive the commits - a brand-new one,
+   or an existing solutions repo you already have?
+4. JS or TypeScript? Suggest plain JavaScript to start - fewer
+   moving parts while you're also learning the extension APIs and
+   the GitHub API at the same time. Migrating to TS later is a
+   mechanical, low-risk change once the logic is proven.
+
+
+================================================================
+14. WHY THIS STAYS LICENSE-CLEAN
+================================================================
+Copyright protects a specific piece of WRITTEN CODE (its literal
+expression), not the general idea of "watch a coding-judge site and
+commit accepted solutions to GitHub via its REST API." That idea,
+and the individual techniques involved (calling a public GraphQL
+API, PUTting base64 content to GitHub's Contents API, retrying on a
+409) are ordinary, widely-used engineering patterns - not owned by
+any one project.
+
+Section 6 above describes exactly what to build - the API calls, the
+data formats, the algorithms - in plain language, so you write your
+own original implementation of each piece rather than copying
+anyone's file. Do that, and there is no license obligation to
+anyone: you own 100% of the code, free to name, brand, license, and
+publish however you want.
+
+The only thing that WOULD create an obligation is copy-pasting
+someone else's actual source code into your project (verbatim or
+lightly modified) - most other open-source LeetCode-sync projects,
+including the reference one you looked at earlier, are MIT-licensed,
+which permits that but requires keeping the original copyright
+notice attached to whatever you copied. Section 12 above covers how
+to avoid ever needing to make that call: read for understanding,
+write it yourself.
+
+
+----------------------------------------------------------------
+Saved at: d:\data\LeetHub-2.0-main\PRD.txt
+(a Markdown copy also lives alongside it as PRD.md)
+----------------------------------------------------------------

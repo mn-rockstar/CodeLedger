@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Welcome to CodeLedger</title>
+    <link rel="stylesheet" href="theme.css" />
+    <style>
+      body {
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        margin: 0;
+        padding: 26px 22px 30px;
+        background: linear-gradient(
+          160deg,
+          var(--plane-top) 0%,
+          var(--plane-bottom) 100%
+        );
+        color: var(--ink-primary);
+      }
+      .wrap {
+        max-width: 420px;
+        margin: 0 auto;
+      }
+
+      header {
+        text-align: center;
+        margin-bottom: 22px;
+      }
+      header img {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        display: block;
+        margin: 0 auto 12px;
+      }
+      h1 {
+        font-size: 23px;
+        font-weight: 700;
+        margin: 0 0 5px;
+        letter-spacing: -0.01em;
+      }
+      .tagline {
+        font-size: 12.5px;
+        color: var(--ink-secondary);
+        margin: 0;
+        letter-spacing: 0.03em;
+      }
+
+      /* Flex, not grid: with a grid the second paragraph auto-placed into
+         the 34px number column and wrapped one word per line. */
+      .card {
+        display: flex;
+        align-items: flex-start;
+        gap: 13px;
+        padding: 15px 16px;
+        margin-bottom: 11px;
+      }
+      .step-number {
+        flex: 0 0 auto;
+        width: 26px;
+        height: 26px;
+        border-radius: 8px;
+        background: var(--accent);
+        color: #ffffff;
+        font-size: 13px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .step-body {
+        flex: 1;
+        min-width: 0;
+      }
+      h2 {
+        font-size: 14px;
+        font-weight: 600;
+        margin: 3px 0 0;
+      }
+      .card p {
+        font-size: 12.5px;
+        line-height: 1.55;
+        color: var(--ink-secondary);
+        margin: 6px 0 0;
+      }
+      strong {
+        color: var(--ink-primary);
+        font-weight: 600;
+      }
+      .puzzle {
+        display: inline-block;
+        border: 1px solid var(--hairline);
+        border-radius: 5px;
+        padding: 0 4px;
+        font-size: 12px;
+      }
+      code {
+        font-size: 11.5px;
+        background: var(--hairline);
+        border-radius: 4px;
+        padding: 1px 4px;
+      }
+      a {
+        color: var(--accent);
+      }
+
+      footer {
+        text-align: center;
+        margin-top: 18px;
+        font-size: 11.5px;
+        color: var(--ink-muted);
+        line-height: 1.65;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <img src="icons/icon-128.png" alt="" />
+        <h1>
+          <span class="wordmark-code">Code</span
+          ><span class="wordmark-ledger">Ledger</span>
+        </h1>
+        <p class="tagline">Code it. Commit it. Track it.</p>
+      </header>
+
+      <div class="card">
+        <div class="step-number">1</div>
+        <div class="step-body">
+          <h2>Pin CodeLedger to your toolbar</h2>
+          <p>
+            Click the <span class="puzzle">🧩</span> puzzle-piece icon at the
+            top right of your browser, find <strong>CodeLedger</strong>, and
+            click the pin beside it — so the dashboard is always one click
+            away.
+          </p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="step-number">2</div>
+        <div class="step-body">
+          <h2>Connect your GitHub account</h2>
+          <p>
+            Click the CodeLedger icon and choose
+            <strong>Login with GitHub</strong>, then create a new private
+            repository or link one you already have.
+          </p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="step-number">3</div>
+        <div class="step-body">
+          <h2>Go solve something</h2>
+          <p>
+            Submit any problem on
+            <a href="https://leetcode.com" target="_blank" rel="noopener"
+              >leetcode.com</a
+            >. The moment it's <strong>Accepted</strong>, your code and the
+            problem statement land in your repo under
+            <code>0001-two-sum/</code>.
+          </p>
+          <p>
+            The first time, it asks you to confirm which LeetCode account is
+            yours, so nothing is committed from an account you didn't mean to
+            use.
+          </p>
+        </div>
+      </div>
+
+      <footer>
+        Your GitHub token stays on this device and is never sent anywhere
+        except GitHub.
+      </footer>
+    </div>
+  </body>
+</html>

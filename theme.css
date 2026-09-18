@@ -1,0 +1,76 @@
+/* Shared design tokens for every extension page (popup, welcome).
+   Light is the base; dark redefines only the tokens.
+
+   The difficulty steps are one blue ramp (ordinal — Easy→Hard is an ordered
+   scale, so the order reads in the colour itself, rather than three
+   unrelated hues). Both sets are validated against the *card* surface the
+   donut actually sits on, not the page gradient behind it. The dark "hard"
+   step is a notch lighter than the light-mode equivalent would suggest
+   because the frosted card lifts the dark surface, and the darker step fell
+   below the 2:1 floor against it. */
+:root {
+  color-scheme: light;
+  --plane-top: #eef2f9;
+  --plane-bottom: #e3e9f4;
+  --card: rgba(255, 255, 255, 0.72);
+  --card-border: rgba(255, 255, 255, 0.9);
+  --card-shadow: 0 1px 2px rgba(16, 30, 54, 0.06),
+    0 8px 24px rgba(16, 30, 54, 0.07);
+  --card-inner: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  --ink-primary: #0d1526;
+  --ink-secondary: #414d63;
+  --ink-muted: #5d6980;
+  --hairline: rgba(13, 21, 38, 0.1);
+  --diff-easy: #86b6ef;
+  --diff-medium: #2a78d6;
+  --diff-hard: #104281;
+  --accent: #2a78d6;
+  --danger: #b3271f;
+  /* The logo's own green (#76bc21) measures 2.08:1 here — far under the
+     4.5:1 text floor — so light mode uses a darkened step of the same hue.
+     Dark mode below restores the authentic colour. */
+  --brand-green: #3d6b0a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --plane-top: #0e1320;
+    --plane-bottom: #151b2c;
+    --card: rgba(255, 255, 255, 0.055);
+    --card-border: rgba(255, 255, 255, 0.1);
+    --card-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    --card-inner: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    --ink-primary: #f2f5fa;
+    --ink-secondary: #b9c3d6;
+    --ink-muted: #98a3b8;
+    --hairline: rgba(255, 255, 255, 0.1);
+    --diff-easy: #cde2fb;
+    --diff-medium: #5598e7;
+    --diff-hard: #1c5cab;
+    --accent: #79aef0;
+    --danger: #f08a84;
+    --brand-green: #76bc21;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* The frosted panel shared by both pages. */
+.card {
+  background: var(--card);
+  backdrop-filter: blur(12px) saturate(1.4);
+  -webkit-backdrop-filter: blur(12px) saturate(1.4);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  box-shadow: var(--card-shadow), var(--card-inner);
+}
+
+.wordmark-code {
+  color: var(--ink-primary);
+}
+.wordmark-ledger {
+  color: var(--brand-green);
+}

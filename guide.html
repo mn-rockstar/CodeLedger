@@ -1,0 +1,1406 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CodeLedger — Guide</title>
+    <style>
+  /* Deliberately no web fonts. This page ships inside the extension, and a
+     tool that promises it doesn't phone home shouldn't fetch a font from a
+     third party the moment someone opens its help. System stacks only. */
+  :root {
+    --font-display: system-ui, -apple-system, "Segoe UI Variable Display",
+      "Segoe UI", Roboto, sans-serif;
+    --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", "SF Mono",
+      Consolas, monospace;
+  }
+  /* Tokens are lifted from the extension's own theme.css so the guide and the
+     product read as one thing. Light is the base; the two dark blocks below
+     redefine only the tokens. */
+  :root {
+    color-scheme: light;
+    --plane-top: #eef2f9;
+    --plane-bottom: #e3e9f4;
+    --panel: rgba(255, 255, 255, 0.72);
+    --panel-border: rgba(255, 255, 255, 0.9);
+    --panel-shadow: 0 1px 2px rgba(16, 30, 54, 0.06),
+      0 8px 24px rgba(16, 30, 54, 0.07);
+    --panel-inner: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    --ink: #0d1526;
+    --ink-2: #414d63;
+    --ink-3: #5d6980;
+    --rule: rgba(13, 21, 38, 0.12);
+    --code-bg: rgba(13, 21, 38, 0.055);
+    --accent: #2a78d6;
+    --green: #3d6b0a;
+    --danger: #b3271f;
+    --easy: #86b6ef;
+    --med: #2a78d6;
+    --hard: #104281;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --plane-top: #0e1320;
+      --plane-bottom: #151b2c;
+      --panel: rgba(255, 255, 255, 0.055);
+      --panel-border: rgba(255, 255, 255, 0.1);
+      --panel-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      --panel-inner: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+      --ink: #f2f5fa;
+      --ink-2: #b9c3d6;
+      --ink-3: #98a3b8;
+      --rule: rgba(255, 255, 255, 0.13);
+      --code-bg: rgba(255, 255, 255, 0.06);
+      --accent: #79aef0;
+      --green: #76bc21;
+      --danger: #f08a84;
+      --easy: #cde2fb;
+      --med: #5598e7;
+      --hard: #1c5cab;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --plane-top: #0e1320;
+    --plane-bottom: #151b2c;
+    --panel: rgba(255, 255, 255, 0.055);
+    --panel-border: rgba(255, 255, 255, 0.1);
+    --panel-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    --panel-inner: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    --ink: #f2f5fa;
+    --ink-2: #b9c3d6;
+    --ink-3: #98a3b8;
+    --rule: rgba(255, 255, 255, 0.13);
+    --code-bg: rgba(255, 255, 255, 0.06);
+    --accent: #79aef0;
+    --green: #76bc21;
+    --danger: #f08a84;
+    --easy: #cde2fb;
+    --med: #5598e7;
+    --hard: #1c5cab;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(168deg, var(--plane-top), var(--plane-bottom))
+      fixed;
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shell {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 40px 24px 96px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0 48px;
+  }
+  @media (min-width: 1100px) {
+    .shell {
+      grid-template-columns: 190px minmax(0, 1fr);
+    }
+  }
+
+  /* ---- section nav ---- */
+  .toc {
+    display: none;
+  }
+  @media (min-width: 1100px) {
+    .toc {
+      display: block;
+      position: sticky;
+      top: 40px;
+      align-self: start;
+      grid-row: 2;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+  }
+  .toc-title {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0 0 12px;
+  }
+  .toc ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 9px;
+  }
+  .toc a {
+    color: var(--ink-2);
+    text-decoration: none;
+    border-left: 2px solid var(--rule);
+    padding-left: 11px;
+    display: block;
+  }
+  .toc a:hover {
+    color: var(--accent);
+    border-left-color: var(--accent);
+  }
+
+  main {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+  @media (min-width: 1100px) {
+    main {
+      grid-column: 2;
+      grid-row: 2;
+    }
+  }
+
+  /* ---- masthead ---- */
+  .masthead {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding-bottom: 26px;
+    margin-bottom: 34px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .mark {
+    width: 42px;
+    height: 42px;
+    border-radius: 11px;
+    background: #0d1117;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06), 0 6px 16px rgba(0, 0, 0, 0.18);
+  }
+  .mark span {
+    font-family: var(--font-mono);
+    font-size: 17px;
+    font-weight: 500;
+    color: #76bc21;
+    line-height: 1;
+    letter-spacing: -0.04em;
+  }
+  .wordmark {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 21px;
+    letter-spacing: -0.025em;
+    margin: 0;
+    line-height: 1.1;
+  }
+  .wordmark .lg {
+    color: var(--green);
+  }
+  .masthead p {
+    margin: 2px 0 0;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
+    color: var(--ink-3);
+  }
+
+  /* ---- prose rhythm ---- */
+  h2 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 26px;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    text-wrap: balance;
+    margin: 0 0 6px;
+  }
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 16.5px;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    margin: 0 0 6px;
+  }
+  section {
+    padding-top: 40px;
+    margin-top: 40px;
+    border-top: 1px solid var(--rule);
+  }
+  section:first-of-type {
+    padding-top: 0;
+    margin-top: 0;
+    border-top: 0;
+  }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 10px;
+  }
+  p {
+    margin: 0 0 15px;
+    max-width: 68ch;
+    color: var(--ink-2);
+  }
+  .lead {
+    font-size: 18px;
+    color: var(--ink);
+    max-width: 62ch;
+  }
+  a {
+    color: var(--accent);
+  }
+  strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.87em;
+    background: var(--code-bg);
+    border-radius: 4px;
+    padding: 1.5px 5px;
+    color: var(--ink);
+  }
+  ul,
+  ol {
+    max-width: 68ch;
+    color: var(--ink-2);
+    padding-left: 20px;
+    margin: 0 0 15px;
+  }
+  li {
+    margin-bottom: 7px;
+  }
+  li::marker {
+    color: var(--ink-3);
+  }
+
+  /* ---- frosted panel: reserved for depicting the actual extension UI ---- */
+  .ui {
+    background: var(--panel);
+    backdrop-filter: blur(12px) saturate(1.4);
+    -webkit-backdrop-filter: blur(12px) saturate(1.4);
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    box-shadow: var(--panel-shadow), var(--panel-inner);
+  }
+
+  figure {
+    margin: 0 0 18px;
+  }
+  figcaption {
+    font-size: 13px;
+    color: var(--ink-3);
+    margin-top: 12px;
+    max-width: 62ch;
+  }
+  .flow {
+    width: 100%;
+    max-width: 640px;
+    height: auto;
+    display: block;
+  }
+  .scroll-x {
+    overflow-x: auto;
+  }
+
+  /* ---- annotated popup ---- */
+  .annotated {
+    display: grid;
+    gap: 26px;
+    align-items: start;
+    margin-bottom: 18px;
+  }
+  @media (min-width: 760px) {
+    .annotated {
+      grid-template-columns: 322px minmax(0, 1fr);
+      gap: 34px;
+    }
+  }
+  /* A gutter column carries the callout numbers. Putting them on grid rows
+     rather than absolute offsets means each pin stays level with its block
+     however the content reflows. */
+  .replica {
+    width: 322px;
+    padding: 13px 13px 13px 5px;
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr);
+    gap: 9px 8px;
+    align-items: center;
+    font-size: 12px;
+  }
+  .replica > .pin {
+    justify-self: center;
+  }
+  .replica > .rp {
+    grid-column: 2;
+  }
+  .replica-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .replica-brand {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: -0.01em;
+  }
+  .replica-brand .m {
+    width: 19px;
+    height: 19px;
+    border-radius: 5px;
+    background: #0d1117;
+    display: grid;
+    place-items: center;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: #76bc21;
+    font-weight: 500;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .chip i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: block;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    box-shadow: var(--panel-inner);
+    padding: 12px;
+  }
+  .donut-wrap {
+    display: grid;
+    place-items: center;
+    padding: 4px 0 10px;
+  }
+  .donut {
+    position: relative;
+    width: 124px;
+    height: 124px;
+  }
+  .donut svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .donut-hero {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+  }
+  .donut-hero b {
+    font-family: var(--font-display);
+    font-size: 37px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+  .donut-hero span {
+    font-family: var(--font-mono);
+    font-size: 8.5px;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-top: 5px;
+  }
+  .legend {
+    display: grid;
+    gap: 6px;
+  }
+  .legend-row {
+    display: grid;
+    grid-template-columns: 9px 1fr auto auto;
+    align-items: center;
+    gap: 8px;
+  }
+  .sw {
+    width: 9px;
+    height: 9px;
+    border-radius: 3px;
+  }
+  .legend-row em {
+    font-style: normal;
+    color: var(--ink-2);
+  }
+  .legend-row b,
+  .legend-row i {
+    font-style: normal;
+    font-variant-numeric: tabular-nums;
+  }
+  .legend-row i {
+    color: var(--ink-3);
+    min-width: 34px;
+    text-align: right;
+  }
+  .kpis {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .kpi {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 9px 10px;
+    min-width: 0;
+  }
+  .kpi b {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    display: block;
+    line-height: 1.2;
+  }
+  .kpi b.sm {
+    font-size: 12.5px;
+    line-height: 1.5;
+    padding-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .kpi span {
+    font-family: var(--font-mono);
+    font-size: 8.5px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    display: block;
+    margin-top: 2px;
+  }
+  .idrows {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 7px 12px;
+    align-items: baseline;
+  }
+  .idrows dt {
+    font-family: var(--font-mono);
+    font-size: 8.5px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .idrows dd {
+    margin: 0;
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .replica-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+  }
+  .replica-actions u {
+    text-decoration: underline;
+    color: var(--ink-3);
+    cursor: default;
+  }
+
+  /* numbered callout markers */
+  .pin {
+    display: inline-grid;
+    place-items: center;
+    width: 19px;
+    height: 19px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 500;
+    line-height: 1;
+    flex: 0 0 auto;
+  }
+  .inline-pin {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .keys {
+    display: grid;
+    gap: 14px;
+  }
+  .key {
+    display: grid;
+    grid-template-columns: 19px minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+  }
+  .key h3 {
+    margin: 0 0 2px;
+    font-size: 14.5px;
+  }
+  .key p {
+    margin: 0;
+    font-size: 14px;
+    max-width: 56ch;
+  }
+
+  /* ---- status chips (depictions of the on-page indicator) ---- */
+  .states {
+    display: grid;
+    gap: 12px;
+    margin: 0 0 18px;
+  }
+  .state {
+    display: grid;
+    grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+    gap: 14px;
+    align-items: center;
+  }
+  @media (max-width: 620px) {
+    .state {
+      grid-template-columns: 1fr;
+      gap: 7px;
+    }
+  }
+  .toast {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+  }
+  .state p {
+    margin: 0;
+    font-size: 14px;
+  }
+
+  /* ---- tree / terminal blocks ---- */
+  .tree {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.75;
+    background: var(--code-bg);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 15px 17px;
+    margin: 0 0 15px;
+    color: var(--ink-2);
+    white-space: pre;
+  }
+  .tree b {
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .tree em {
+    color: var(--ink-3);
+    font-style: normal;
+  }
+
+  .note {
+    border-left: 2px solid var(--accent);
+    padding: 2px 0 2px 16px;
+    margin: 0 0 15px;
+    max-width: 68ch;
+  }
+  .note p:last-child {
+    margin-bottom: 0;
+  }
+  .note.warn {
+    border-left-color: var(--danger);
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 14px;
+    margin: 0 0 15px;
+  }
+  th,
+  td {
+    text-align: left;
+    padding: 9px 12px 9px 0;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+  th {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    font-weight: 400;
+  }
+  td {
+    color: var(--ink-2);
+  }
+
+  .steps {
+    display: grid;
+    gap: 20px;
+    margin-bottom: 15px;
+  }
+  .step {
+    display: grid;
+    grid-template-columns: 26px minmax(0, 1fr);
+    gap: 14px;
+    align-items: start;
+  }
+  .step .n {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 13px;
+    color: #fff;
+    background: var(--ink);
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    line-height: 1;
+  }
+  .step p {
+    margin: 0;
+    font-size: 15px;
+  }
+
+  a:focus-visible,
+  .toc a:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 3px;
+  }
+
+  footer {
+    margin-top: 52px;
+    padding-top: 22px;
+    border-top: 1px solid var(--rule);
+    font-size: 13px;
+    color: var(--ink-3);
+    max-width: 68ch;
+  }
+  footer p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--ink-3);
+  }
+  .byline {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 15px 0;
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+  }
+  .byline-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+  }
+  .byline-mark span {
+    font-size: 14px;
+  }
+  .byline-name {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 14.5px;
+    color: var(--ink) !important;
+    letter-spacing: -0.01em;
+  }
+  .byline-links {
+    margin-top: 2px !important;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .colophon {
+    margin-top: 16px !important;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+    </style>
+  </head>
+  <body>
+<div class="shell">
+  <header class="masthead">
+    <div class="mark"><span>&gt;_</span></div>
+    <div>
+      <h1 class="wordmark">Code<span class="lg">Ledger</span></h1>
+      <p>Code it. Commit it. Track it.</p>
+    </div>
+  </header>
+
+  <nav class="toc" aria-label="Sections">
+    <p class="toc-title">Contents</p>
+    <ol>
+      <li><a href="#what">What it does</a></li>
+      <li><a href="#how">How it works</a></li>
+      <li><a href="#setup">Setup</a></li>
+      <li><a href="#popup">The popup</a></li>
+      <li><a href="#repo">In your repo</a></li>
+      <li><a href="#status">Status messages</a></li>
+      <li><a href="#account">Account check</a></li>
+      <li><a href="#trouble">Troubleshooting</a></li>
+      <li><a href="#privacy">Privacy</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <section id="what">
+      <p class="eyebrow">The short version</p>
+      <h2>Solve a problem. It's already committed.</h2>
+      <p class="lead">
+        CodeLedger watches LeetCode while you work. The moment a submission
+        comes back <strong>Accepted</strong>, it commits your solution and the
+        problem statement to a GitHub repository you own — no copying, no
+        pasting, no <code>git add</code>.
+      </p>
+      <p>
+        It only ever acts on accepted submissions. A wrong answer, a timeout, a
+        compile error: nothing happens, nothing is written. Your practice
+        history builds itself, and the repo stays clean enough to show someone.
+      </p>
+    </section>
+
+    <section id="how">
+      <p class="eyebrow">Under the hood</p>
+      <h2>How it works</h2>
+      <p>
+        LeetCode never changes its address bar when you submit — the result
+        appears in place. So rather than watching the URL, CodeLedger watches
+        the page itself for the result banner LeetCode draws, then asks
+        LeetCode's own API for the details it needs.
+      </p>
+
+      <figure>
+        <div class="scroll-x">
+          <svg
+            class="flow"
+            viewBox="0 0 640 646"
+            role="img"
+            aria-label="Flow: you submit on LeetCode; LeetCode judges and renders a result banner; CodeLedger spots that banner in the page; it asks LeetCode's API for the submission id and then the code; it checks the result is Accepted and the account is yours; then it commits two files to your GitHub repo."
+          >
+            <defs>
+              <marker
+                id="ar"
+                viewBox="0 0 10 10"
+                refX="9"
+                refY="5"
+                markerWidth="6"
+                markerHeight="6"
+                orient="auto-start-reverse"
+              >
+                <polygon points="0,0 10,5 0,10" fill="currentColor" />
+              </marker>
+            </defs>
+
+            <g
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.25"
+              opacity="0.9"
+            >
+              <rect x="40" y="16" width="300" height="56" rx="11" />
+              <rect x="40" y="140" width="300" height="56" rx="11" />
+              <rect x="40" y="264" width="300" height="56" rx="11" />
+              <rect x="40" y="388" width="300" height="56" rx="11" />
+            </g>
+            <rect
+              x="40"
+              y="512"
+              width="300"
+              height="56"
+              rx="11"
+              fill="none"
+              stroke="var(--green)"
+              stroke-width="1.75"
+            />
+
+            <g
+              fill="currentColor"
+              font-family="system-ui, -apple-system, 'Segoe UI', sans-serif"
+              font-size="13"
+            >
+              <text x="60" y="49">You hit Submit on LeetCode</text>
+              <text x="60" y="173">LeetCode judges it, shows the result</text>
+              <text x="60" y="297">CodeLedger spots the result banner</text>
+              <text x="60" y="411">It asks LeetCode for your code</text>
+            </g>
+            <text
+              x="60"
+              y="545"
+              fill="var(--green)"
+              font-family="system-ui, -apple-system, 'Segoe UI', sans-serif"
+              font-size="13"
+              font-weight="600"
+            >
+              Commits to your GitHub repo
+            </text>
+
+            <g
+              stroke="currentColor"
+              stroke-width="1.25"
+              marker-end="url(#ar)"
+              opacity="0.75"
+            >
+              <line x1="190" y1="72" x2="190" y2="134" />
+              <line x1="190" y1="196" x2="190" y2="258" />
+              <line x1="190" y1="320" x2="190" y2="382" />
+              <line x1="190" y1="444" x2="190" y2="506" />
+            </g>
+
+            <g
+              fill="currentColor"
+              font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace"
+              font-size="10.5"
+              opacity="0.68"
+            >
+              <text x="202" y="107">in the page, not the URL</text>
+              <text x="202" y="231">watches for the banner</text>
+              <text x="202" y="355">asks its API for the details</text>
+              <text x="202" y="479">two files, plus your stats</text>
+            </g>
+
+            <line
+              x1="340"
+              y1="416"
+              x2="418"
+              y2="416"
+              stroke="currentColor"
+              stroke-width="1.25"
+              stroke-dasharray="4 3"
+              marker-end="url(#ar)"
+              opacity="0.6"
+            />
+            <rect
+              x="424"
+              y="380"
+              width="192"
+              height="72"
+              rx="10"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1"
+              stroke-dasharray="4 3"
+              opacity="0.55"
+            />
+            <g
+              fill="currentColor"
+              font-family="system-ui, -apple-system, 'Segoe UI', sans-serif"
+              font-size="11.5"
+              opacity="0.8"
+            >
+              <text x="438" y="406">Not Accepted, or a</text>
+              <text x="438" y="423">different LeetCode</text>
+              <text x="438" y="440">account? It stops here.</text>
+            </g>
+
+            <text
+              x="320"
+              y="608"
+              fill="currentColor"
+              font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace"
+              font-size="10.5"
+              text-anchor="middle"
+              opacity="0.6"
+            >
+              README.md + your solution file + stats.json
+            </text>
+          </svg>
+        </div>
+        <figcaption>
+          The whole pipeline. Everything runs inside the LeetCode tab — there is
+          no server in the middle, and your code goes straight from LeetCode to
+          the repo you chose.
+        </figcaption>
+      </figure>
+    </section>
+
+    <section id="setup">
+      <p class="eyebrow">One time only</p>
+      <h2>Setting it up</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="n">1</div>
+          <div>
+            <h3>Pin it to your toolbar</h3>
+            <p>
+              Click the puzzle-piece icon at the top right of your browser, find
+              CodeLedger, and click the pin beside it. Extensions can't pin
+              themselves — that one is always the browser's call, not ours.
+            </p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="n">2</div>
+          <div>
+            <h3>Connect GitHub</h3>
+            <p>
+              Click the CodeLedger icon, then <strong>Login with GitHub</strong>.
+              You'll approve it on GitHub's own page — CodeLedger never sees your
+              password.
+            </p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="n">3</div>
+          <div>
+            <h3>Pick where solutions go</h3>
+            <p>
+              Either <strong>Create repo</strong> to make a fresh private one, or
+              <strong>Link repo</strong> to use one you already have. For linking,
+              paste the repo's GitHub link — or just type its name, and your own
+              account is assumed.
+            </p>
+          </div>
+        </div>
+      </div>
+      <p>
+        That's it. Go solve something; the first time, it will ask you to confirm
+        which LeetCode account is yours.
+      </p>
+    </section>
+
+    <section id="popup">
+      <p class="eyebrow">Every control</p>
+      <h2>The popup, button by button</h2>
+      <p>
+        Clicking the toolbar icon opens your dashboard. Here's what each part
+        is, using example figures.
+      </p>
+
+      <div class="annotated">
+        <div class="ui replica" aria-hidden="true">
+          <span class="pin">1</span>
+          <div class="replica-bar rp">
+            <div class="replica-brand">
+              <span class="m">&gt;_</span>
+              <span>Code<span style="color: var(--green)">Ledger</span></span>
+            </div>
+            <span class="chip"><i></i>Connected</span>
+          </div>
+
+          <span class="pin">2</span>
+          <div class="card rp">
+            <div class="donut-wrap">
+              <div class="donut">
+                <svg viewBox="0 0 160 160" aria-hidden="true">
+                  <g transform="rotate(-90 80 80)">
+                    <circle
+                      cx="80"
+                      cy="80"
+                      r="64"
+                      fill="none"
+                      stroke="var(--easy)"
+                      stroke-width="20"
+                      stroke-dasharray="169 233"
+                      stroke-dashoffset="0"
+                    />
+                    <circle
+                      cx="80"
+                      cy="80"
+                      r="64"
+                      fill="none"
+                      stroke="var(--med)"
+                      stroke-width="20"
+                      stroke-dasharray="151 251"
+                      stroke-dashoffset="-171"
+                    />
+                    <circle
+                      cx="80"
+                      cy="80"
+                      r="64"
+                      fill="none"
+                      stroke="var(--hard)"
+                      stroke-width="20"
+                      stroke-dasharray="74 328"
+                      stroke-dashoffset="-324"
+                    />
+                  </g>
+                </svg>
+                <div class="donut-hero">
+                  <b>42</b><span>Solved</span>
+                </div>
+              </div>
+            </div>
+            <div class="legend">
+              <div class="legend-row">
+                <span class="sw" style="background: var(--easy)"></span>
+                <em>Easy</em><b>18</b><i>43%</i>
+              </div>
+              <div class="legend-row">
+                <span class="sw" style="background: var(--med)"></span>
+                <em>Medium</em><b>16</b><i>38%</i>
+              </div>
+              <div class="legend-row">
+                <span class="sw" style="background: var(--hard)"></span>
+                <em>Hard</em><b>8</b><i>19%</i>
+              </div>
+            </div>
+          </div>
+
+          <span class="pin">3</span>
+          <div class="kpis rp">
+            <div class="kpi"><b>7</b><span>Day streak</span></div>
+            <div class="kpi"><b>12</b><span>Last 7 days</span></div>
+            <div class="kpi">
+              <b class="sm">Python</b><span>Top language</span>
+            </div>
+            <div class="kpi"><b class="sm">Two Sum</b><span>2h ago</span></div>
+          </div>
+
+          <span class="pin">4</span>
+          <div class="card rp">
+            <dl class="idrows">
+              <dt>GitHub</dt>
+              <dd>your-name</dd>
+              <dt>LeetCode</dt>
+              <dd>your-handle</dd>
+              <dt>Repo</dt>
+              <dd style="color: var(--accent)">your-name/solutions</dd>
+            </dl>
+          </div>
+
+          <div class="replica-actions rp">
+            <span class="inline-pin"
+              ><span class="pin">5</span><u>Reset stats</u></span
+            >
+            <span class="inline-pin"
+              ><u>Disconnect</u><span class="pin">6</span></span
+            >
+          </div>
+        </div>
+
+        <div class="keys">
+          <div class="key">
+            <span class="pin">1</span>
+            <div>
+              <h3>Status chip</h3>
+              <p>
+                Reads <strong>Connected</strong> when GitHub and a repo are both
+                set. If it says <strong>Setup</strong>, something still needs
+                picking.
+              </p>
+            </div>
+          </div>
+          <div class="key">
+            <span class="pin">2</span>
+            <div>
+              <h3>Solved, and the split</h3>
+              <p>
+                The big number counts every problem committed at least once —
+                re-solving one never counts it twice. Below it, the same total
+                split by difficulty. Those colours run light to dark on purpose:
+                difficulty is a scale, not three unrelated labels.
+              </p>
+            </div>
+          </div>
+          <div class="key">
+            <span class="pin">3</span>
+            <div>
+              <h3>Four measures</h3>
+              <p>
+                Consecutive days solving, solves in the last week, the language
+                you use most, and your most recent problem. A streak survives
+                until you miss a whole day — it won't reset just because you
+                haven't solved yet today.
+              </p>
+            </div>
+          </div>
+          <div class="key">
+            <span class="pin">4</span>
+            <div>
+              <h3>Who and where</h3>
+              <p>
+                The GitHub account committing, the LeetCode account being
+                watched, and the repo receiving files. The repo name is a link —
+                click it to open the repo.
+              </p>
+            </div>
+          </div>
+          <div class="key">
+            <span class="pin">5</span>
+            <div>
+              <h3>Reset stats</h3>
+              <p>
+                Sets the counter back to zero and clears
+                <code>stats.json</code> in your repo. It asks before doing it.
+                <strong>Your committed solutions are never touched.</strong>
+              </p>
+            </div>
+          </div>
+          <div class="key">
+            <span class="pin">6</span>
+            <div>
+              <h3>Disconnect</h3>
+              <p>
+                Forgets your GitHub connection, the repo link and your stats on
+                this device. Nothing on GitHub is deleted — everything already
+                committed stays exactly where it is.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3>Before you're connected</h3>
+      <p>
+        Until setup is done the popup shows different controls:
+        <strong>Login with GitHub</strong> starts the sign-in;
+        <strong>Create repo</strong> makes a new private repository from the
+        name you type; <strong>Link repo</strong> points at an existing one.
+        <strong>Disconnect GitHub</strong> backs all the way out.
+      </p>
+      <p>
+        You may also see <strong>Use detected account</strong>. That appears
+        when the LeetCode account signed in right now isn't the one you
+        confirmed — clicking it makes the current account the confirmed one.
+      </p>
+    </section>
+
+    <section id="repo">
+      <p class="eyebrow">The output</p>
+      <h2>What lands in your repo</h2>
+      <p>
+        One folder per problem, numbered so it sorts the way LeetCode does. The
+        file extension follows whichever language you solved in.
+      </p>
+      <div class="tree scroll-x"><b>your-name/solutions</b>
+├── <b>0001-two-sum/</b>
+│   ├── README.md          <em>the problem statement</em>
+│   └── two-sum.py         <em>your accepted code</em>
+├── <b>0013-roman-to-integer/</b>
+│   ├── README.md
+│   └── roman-to-integer.py
+└── stats.json             <em>your counts, so they survive a reinstall</em></div>
+      <p>
+        The commit message carries the run's numbers, which turns your git
+        history into a performance log:
+      </p>
+      <div class="tree scroll-x">Time: 7 ms (58.0%), Memory: 19.2 MB (41.9%)</div>
+      <div class="note">
+        <p>
+          Solve the same problem again and the files are updated in place rather
+          than duplicated — you get a second commit on the same folder, so
+          improvements show up as history.
+        </p>
+      </div>
+    </section>
+
+    <section id="status">
+      <p class="eyebrow">On the page</p>
+      <h2>What the messages mean</h2>
+      <p>
+        A small box appears at the bottom-right of LeetCode while CodeLedger
+        works. It clears itself after a few seconds, so it's easy to miss — that
+        isn't a failure.
+      </p>
+      <div class="states">
+        <div class="state">
+          <span class="toast" style="background: #555"
+            >CodeLedger: committing…</span
+          >
+          <p>Working. It has your code and is writing to GitHub.</p>
+        </div>
+        <div class="state">
+          <span class="toast" style="background: #2e7d32"
+            >CodeLedger: committed ✓</span
+          >
+          <p>Done — the files are in your repo.</p>
+        </div>
+        <div class="state">
+          <span class="toast" style="background: #b8860b"
+            >CodeLedger: not connected — open the popup to connect GitHub</span
+          >
+          <p>
+            Something in setup is missing: the GitHub connection, the repo link,
+            or both. Open the popup and it'll show you which.
+          </p>
+        </div>
+      </div>
+      <p>
+        Switching tabs mid-commit is fine. The work continues in the background;
+        you just won't see the checkmark.
+      </p>
+    </section>
+
+    <section id="account">
+      <p class="eyebrow">A deliberate interruption</p>
+      <h2>The account check</h2>
+      <p>
+        The first time it commits — and any time the LeetCode account signed in
+        differs from the one you confirmed — CodeLedger stops and asks before
+        writing anything:
+      </p>
+      <div class="ui" style="padding: 14px 16px; max-width: 360px; margin-bottom: 15px">
+        <p style="margin: 0 0 10px; font-size: 13.5px; color: var(--ink)">
+          Confirm your LeetCode account before committing:
+          <strong>your-handle</strong> — is this you?
+        </p>
+        <div style="display: flex; gap: 8px; font-size: 12px">
+          <span
+            style="
+              padding: 5px 11px;
+              border-radius: 7px;
+              border: 1px solid var(--panel-border);
+              background: var(--panel);
+            "
+            >Yes, this is me</span
+          >
+          <span
+            style="
+              padding: 5px 11px;
+              border-radius: 7px;
+              border: 1px solid var(--panel-border);
+              background: var(--panel);
+            "
+            >Skip this commit</span
+          >
+        </div>
+      </div>
+      <p>
+        This exists because a shared machine, or a second LeetCode account,
+        would otherwise quietly push someone else's work into your repo.
+        Ignoring the prompt counts as skipping — nothing is committed unless you
+        say so.
+      </p>
+    </section>
+
+    <section id="trouble">
+      <p class="eyebrow">When it misbehaves</p>
+      <h2>Troubleshooting</h2>
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Symptom</th>
+            <th scope="col">Most likely cause</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Nothing happens after Accepted</td>
+            <td>
+              The LeetCode tab was open before the extension was updated.
+              Refresh the tab.
+            </td>
+          </tr>
+          <tr>
+            <td>A commit appeared, but no CodeLedger message</td>
+            <td>
+              Another LeetCode-to-GitHub extension is also installed and got
+              there first. Disable it.
+            </td>
+          </tr>
+          <tr>
+            <td>"Not connected", but the popup looks fine</td>
+            <td>
+              The repo link is missing even though GitHub is connected. Re-link
+              it in the popup.
+            </td>
+          </tr>
+          <tr>
+            <td>Counts look wrong or empty</td>
+            <td>
+              Stats begin from the first solve after installing. They aren't
+              backfilled from problems solved earlier.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="note warn">
+        <p>
+          <strong>Clearing browsing data wipes the setup.</strong> Browsers treat
+          extension storage as site data, so a cleanup can remove your repo link
+          — and sometimes the GitHub connection with it. Reconnect from the
+          popup; your repo and everything in it are untouched.
+        </p>
+      </div>
+    </section>
+
+    <section id="privacy">
+      <p class="eyebrow">What's kept</p>
+      <h2>Privacy</h2>
+      <p>
+        No analytics, no tracking, no accounts. Your GitHub token is stored on
+        your own device and is sent nowhere except GitHub itself. Your solution
+        code goes only to the repository you picked.
+      </p>
+      <p>
+        CodeLedger reads your submission from LeetCode using the same web API
+        the site itself uses, from the tab you're already signed into. The only
+        other service involved is a small script that completes GitHub sign-in —
+        it handles one step of the handshake and stores nothing.
+      </p>
+      <div class="note">
+        <p>
+          Creating a repo through CodeLedger makes it
+          <strong>private</strong> by default. If you link an existing public
+          repo, your solutions will be public — that's your call to make, so
+          check which one you're pointing at.
+        </p>
+      </div>
+    </section>
+
+    <footer>
+      <p style="margin-bottom: 18px">
+        CodeLedger is a browser extension for LeetCode. It commits only accepted
+        submissions, only to the repository you choose, and only from the
+        account you confirm.
+      </p>
+      <div class="byline">
+        <div class="mark byline-mark"><span>&gt;_</span></div>
+        <div>
+          <p class="byline-name">Built by Mohit Narvariya</p>
+          <p class="byline-links">
+            <a href="mailto:mohitnarvariya70@gmail.com"
+              >mohitnarvariya70@gmail.com</a
+            >
+          </p>
+        </div>
+      </div>
+      <p class="colophon">© 2026 Mohit Narvariya</p>
+    </footer>
+  </main>
+</div>
+  </body>
+</html>
