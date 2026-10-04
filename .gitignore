@@ -6,6 +6,3 @@ dist/
 
 # Packaged uploads for the Chrome Web Store
 *.zip
-
-# Personal interview/resume notes — not part of the extension
-CodeLedger_Resume_Details.txt
