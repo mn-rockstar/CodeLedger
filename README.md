@@ -2,6 +2,10 @@
 
 **Code it. Commit it. Track it.**
 
+[Install from the Chrome Web Store](https://chromewebstore.google.com/detail/ppkdfibnadlafpilkffihlmnedmlleja)
+· [Source](https://github.com/mn-rockstar/CodeLedger)
+· [Privacy policy](PRIVACY.md)
+
 A Chrome extension that watches LeetCode while you solve problems and — the
 moment a submission is **Accepted** — automatically commits your solution
 and the problem statement to a GitHub repository you own. No copy-pasting,

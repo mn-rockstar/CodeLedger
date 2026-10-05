@@ -26,6 +26,14 @@ const AUTHOR_NAME = "Mohit Narvariya";
 const AUTHOR_EMAIL = "mohitnarvariya70@gmail.com";
 const AUTHOR_LINKEDIN = "";
 
+/**
+ * The extension's own source. Linked from About so anyone can read the code
+ * and check the privacy claims for themselves rather than taking them on
+ * trust — which is the whole argument for an extension holding a GitHub
+ * token. Not to be confused with the user's linked solutions repo.
+ */
+const SOURCE_REPO_URL = "https://github.com/mn-rockstar/CodeLedger";
+
 /** One refresh per popup session — enough to catch up another device's solves. */
 let statsRefreshed = false;
 
@@ -280,6 +288,7 @@ function renderAbout(username: string, repo: string): void {
       ? `<dt>LinkedIn</dt><dd><a href="${escapeHtml(AUTHOR_LINKEDIN)}" target="_blank" rel="noopener">View profile</a></dd>`
       : "",
     `<dt>Email</dt><dd><a href="mailto:${escapeHtml(AUTHOR_EMAIL)}">${escapeHtml(AUTHOR_EMAIL)}</a></dd>`,
+    `<dt>Source</dt><dd><a href="${escapeHtml(SOURCE_REPO_URL)}" target="_blank" rel="noopener">View on GitHub</a></dd>`,
   ].join("");
 
   app.innerHTML = `
